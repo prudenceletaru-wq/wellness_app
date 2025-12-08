@@ -1,0 +1,53 @@
+# managers/analysis_engine.py
+import pandas as pd
+
+NUMERIC_COLS = ["sleep_hours", "mood", "stress", "activity_min"]
+
+class AnalysisEngine:
+    def preprocess(self, df: pd.DataFrame, user_id: str = None) -> pd.DataFrame:
+        df = df.copy()
+        if "date" in df.columns:
+            df["date"] = pd.to_datetime(df["date"], errors="coerce")
+            df = df.dropna(subset=["date"])
+            # normalize to date only (midnight)
+            df["date"] = pd.to_datetime(df["date"].dt.date)
+        else:
+            df["date"] = pd.NaT
+
+        for c in NUMERIC_COLS:
+            if c in df.columns:
+                df[c] = pd.to_numeric(df[c], errors="coerce")
+            else:
+                df[c] = pd.NA
+
+        if user_id:
+            df = df[df["user_id"] == user_id]
+
+        return df.sort_values("date").reset_index(drop=True)
+
+    def summary_stats(self, df: pd.DataFrame) -> pd.DataFrame:
+        df = self.preprocess(df)
+        if df.empty:
+            return pd.DataFrame(columns=["count", "mean", "std", "min", "25%", "50%", "75%", "max"], index=NUMERIC_COLS)
+        return df[NUMERIC_COLS].describe().T
+
+    def rolling_mean(self, df: pd.DataFrame, col: str, window: int = 7) -> pd.Series:
+        df = self.preprocess(df)
+        if df.empty or col not in df.columns:
+            return pd.Series(dtype=float)
+        s = df.set_index("date")[col].rolling(window=window, min_periods=1).mean()
+        return s
+
+    def correlations(self, df: pd.DataFrame) -> pd.DataFrame:
+        df = self.preprocess(df)
+        if df.empty:
+            return pd.DataFrame(columns=NUMERIC_COLS, index=NUMERIC_COLS)
+        return df[NUMERIC_COLS].corr()
+
+    def weekly_summary(self, df: pd.DataFrame) -> pd.DataFrame:
+        df = self.preprocess(df)
+        if df.empty:
+            return pd.DataFrame(columns=["date"] + NUMERIC_COLS)
+        df = df.set_index("date")
+        weekly = df[NUMERIC_COLS].resample("W-MON").mean().reset_index()
+        return weekly
