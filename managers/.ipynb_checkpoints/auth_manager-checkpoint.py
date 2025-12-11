@@ -20,6 +20,14 @@ class AuthManager(BaseManager):
         self.users_csv = users_csv
         self._ensure_users_csv()
 
+        # Session state keys
+        if "username" not in st.session_state:
+            st.session_state["username"] = None
+        if "login_submitted" not in st.session_state:
+            st.session_state["login_submitted"] = False
+        if "signup_submitted" not in st.session_state:
+            st.session_state["signup_submitted"] = False
+
     def _ensure_users_csv(self):
         if not os.path.exists(self.users_csv):
             parent = os.path.dirname(self.users_csv)
@@ -37,33 +45,27 @@ class AuthManager(BaseManager):
     def authenticate_user(self):
         users = self.load_users()
 
-        # initialize session state
-        if "username" not in st.session_state:
-            st.session_state["username"] = None
-
-        # if already logged in, show logout and return
+        # --- Already logged in ---
         if st.session_state["username"]:
             st.write(f"Logged in as **{st.session_state['username']}**")
             if st.button("Logout"):
                 st.session_state["username"] = None
-                st.experimental_rerun()
+                st.experimental_rerun()  # refresh UI after logout
             return st.session_state["username"]
 
-        # --- Centered UI ---
-        st.title("🌿 Lifestyle & Wellness Tracker 🌿")  # App title at the top
-        st.write("")  # vertical spacing
-        st.write("")
-        st.write("")
+        # --- Not logged in, show login/signup ---
+        st.title("🌿 Lifestyle & Wellness Tracker 🌿")
+        st.write("\n\n\n")  # spacing
 
-        # Horizontal centering
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
             choice = st.radio("Account", ["Login", "Sign Up"], horizontal=True)
-
             if choice == "Login":
-                return self._login(users)
+                self._login(users)
             else:
-                return self._signup(users)
+                self._signup(users)
+
+        return st.session_state["username"]
 
     def _login(self, users):
         st.subheader("Login")
@@ -71,16 +73,22 @@ class AuthManager(BaseManager):
             username = st.text_input("Username")
             password = st.text_input("Password", type="password")
             submitted = st.form_submit_button("Login")
-            if submitted:
-                match = users[(users["username"] == str(username).strip()) &
-                              (users["password"] == str(password))]
+
+            if submitted and not st.session_state["login_submitted"]:
+                st.session_state["login_submitted"] = True
+                match = users[
+                    (users["username"] == str(username).strip()) &
+                    (users["password"] == str(password))
+                ]
                 if not match.empty:
                     st.session_state["username"] = str(username).strip()
                     st.success(f"Logged in as {st.session_state['username']}")
-                    return st.session_state["username"]
+                    st.session_state["login_submitted"] = False
+                    st.experimental_rerun()  # refresh UI to show dashboard
+                    return
                 else:
                     st.error("Invalid username or password.")
-        return None
+                    st.session_state["login_submitted"] = False
 
     def _signup(self, users):
         st.subheader("Sign Up")
@@ -89,14 +97,19 @@ class AuthManager(BaseManager):
             pw1 = st.text_input("Password", type="password")
             pw2 = st.text_input("Confirm password", type="password")
             create = st.form_submit_button("Create account")
-            if create:
+
+            if create and not st.session_state["signup_submitted"]:
+                st.session_state["signup_submitted"] = True
                 nu = str(new_user).strip()
                 if not nu or not pw1:
                     st.error("Username and password required.")
+                    st.session_state["signup_submitted"] = False
                 elif pw1 != pw2:
                     st.error("Passwords do not match.")
+                    st.session_state["signup_submitted"] = False
                 elif nu in users["username"].values:
                     st.error("Username already exists.")
+                    st.session_state["signup_submitted"] = False
                 else:
                     df = users.copy()
                     df = pd.concat([df, pd.DataFrame([{"username": nu, "password": pw1}])],
@@ -104,5 +117,6 @@ class AuthManager(BaseManager):
                     df.to_csv(self.users_csv, index=False)
                     st.success(f"Account created. Logged in as {nu}")
                     st.session_state["username"] = nu
-                    return nu
-        return None
+                    st.session_state["signup_submitted"] = False
+                    st.experimental_rerun()  # refresh UI to show dashboard
+                    return

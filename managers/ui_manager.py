@@ -9,7 +9,7 @@ from .base_manager import BaseManager
 class UIManager(BaseManager):
     """
     Responsible for Streamlit UI rendering: entry form, dashboard, plots, and
-    simple overwrite confirmation for same-day entries.
+    overwrite confirmation for same-day entries.
     Expects an 'app' object with attributes:
         - data_manager (DataManager instance)
         - analysis_engine (AnalysisEngine instance)
@@ -18,41 +18,31 @@ class UIManager(BaseManager):
 
     def __init__(self, app):
         self.app = app
-        # ensure a rerun flag exists to toggle when needed
-        if "ui_rerun_flag" not in st.session_state:
-            st.session_state["ui_rerun_flag"] = False
-        if "pending_entry" not in st.session_state:
-            st.session_state["pending_entry"] = None
-
-    def _toggle_rerun(self):
-        st.session_state["ui_rerun_flag"] = not st.session_state["ui_rerun_flag"]
 
     def render_dashboard(self, username: str):
-        st.title("Lifestyle & Wellness Tracker")
-        st.markdown(f"**Logged in as:** `{username}`")
-        st.write("")  # small spacer
+        # Clear any leftover pending entries
+        if "pending_entry" in st.session_state:
+            del st.session_state["pending_entry"]
 
-        # personalized welcome
+        st.title("🌿 Lifestyle & Wellness Tracker 🌿")
+        st.markdown(f"**Logged in as:** `{username}`")
+        st.write("")  # spacer
+
+        # Load entries
         df_all = self.app.data_manager.load_entries()
         user_df = df_all[df_all["user_id"] == username].copy() if not df_all.empty else pd.DataFrame()
+
+        # Welcome message
         if user_df.empty:
             st.info(f"Welcome, {username}! 🌟 Start tracking your wellness today — small steps lead to big improvements! 💪")
         else:
             st.success(f"Welcome back, {username}! 🌟 Keep logging daily — small steps add up. 💪")
 
-        # ENTRY FORM (date is automatic, shown but not editable)
+        # ENTRY FORM
         st.header("Daily Wellness Entry")
         today_str = date.today().isoformat()
+        logged_today = (not user_df.empty) and (user_df["date"].astype(str) == today_str).any()
 
-        # Display a collapsed message if user already logged today
-        logged_today = False
-        if not user_df.empty:
-            try:
-                logged_today = (user_df["date"].astype(str) == today_str).any()
-            except Exception:
-                logged_today = False
-
-        # Show the form (date visible but not editable)
         with st.form("entry_form"):
             st.text_input("Date (auto)", value=today_str, disabled=True, key="entry_date_display")
             sleep = st.number_input("Sleep hours (hrs)", min_value=0.0, max_value=24.0, value=7.0, step=0.25, key="entry_sleep")
@@ -73,52 +63,32 @@ class UIManager(BaseManager):
                 "notes": notes or ""
             }
 
-            # check if there's an existing entry today
-            if not df_all.empty:
-                mask = (df_all["user_id"] == username) & (df_all["date"].astype(str) == today_str)
-            else:
-                mask = pd.Series([False])
+            mask = (df_all["user_id"] == username) & (df_all["date"].astype(str) == today_str) if not df_all.empty else pd.Series([False])
 
             if mask.any():
-                # save pending entry to session and ask for confirmation
-                st.warning("You already logged data today. Do you want to overwrite it?")
-                if st.button("Confirm overwrite"):
+                st.warning("You already logged data today. Overwriting the entry...")
+                try:
                     self.app.data_manager.save_entry(entry)
                     st.success("Entry overwritten for today ✅")
-                    # force UI refresh
-                    self._toggle_rerun()
-                else:
-                    st.info("No changes saved. Click 'Confirm overwrite' to replace today's entry.")
-                    st.session_state["pending_entry"] = entry
+                    st.experimental_rerun()  # instant refresh
+                except Exception as e:
+                    st.error(f"Failed to overwrite entry: {e}")
             else:
-                # no existing entry: save directly
                 try:
                     self.app.data_manager.save_entry(entry)
                     st.success("✅ Entry saved successfully! Keep up the good work! 🌟")
-                    self._toggle_rerun()
+                    st.experimental_rerun()  # instant refresh
                 except Exception as e:
                     st.error(f"Failed to save entry: {e}")
 
-        # If they have a pending entry from earlier, show a small prompt
-        if st.session_state.get("pending_entry"):
-            st.info("You have a pending entry (not saved). Press 'Confirm overwrite' in the form to save it.")
-            if st.button("Discard pending entry"):
-                st.session_state["pending_entry"] = None
-                self._toggle_rerun()
-
-        # If there are no entries, stop after showing info (but still allow the form to show)
-        if user_df.empty:
-            st.info("No saved entries yet — add one using the form above.")
-            # continue to show placeholders below
-
-        # Show entries table (latest first)
+        # DASHBOARD
         st.header("Your Dashboard")
         if not user_df.empty:
             display_df = user_df.sort_values("date", ascending=False).reset_index(drop=True)
             st.subheader("Entries (latest first)")
             st.dataframe(display_df)
 
-            # key statistics (user-friendly)
+            # Key statistics
             st.subheader("Key statistics")
             try:
                 stats = pd.DataFrame({
@@ -145,14 +115,14 @@ class UIManager(BaseManager):
             except Exception:
                 st.info("Not enough numeric data to compute stats.")
 
-            # Latest entry recommendations (render HTML-safe)
+            # Recommendations
             st.subheader("Latest entry recommendations")
-            latest = display_df.sort_values("date", ascending=False).iloc[0].to_dict()
+            latest = display_df.iloc[0].to_dict()
             recs = self.app.recs_engine.generate(latest)
             for r in recs:
                 st.markdown(f"- {r}", unsafe_allow_html=True)
 
-            # Correlations and insights
+            # Correlations
             st.subheader("Correlations")
             try:
                 corr = self.app.analysis_engine.correlations(user_df)
@@ -163,41 +133,12 @@ class UIManager(BaseManager):
                     sns.heatmap(corr, annot=True, fmt=".2f", vmin=-1, vmax=1, ax=ax, cmap="coolwarm")
                     ax.set_title("Correlation Heatmap")
                     st.pyplot(fig)
-
-                    # simple human-friendly observations
-                    observations = []
-                    pairs = [
-                        ("sleep_hours", "stress"),
-                        ("sleep_hours", "mood"),
-                        ("activity_min", "mood"),
-                        ("activity_min", "stress"),
-                        ("mood", "stress"),
-                        ("sleep_hours", "activity_min")
-                    ]
-                    for var1, var2 in pairs:
-                        if var1 not in corr.index or var2 not in corr.columns or pd.isna(corr.loc[var1, var2]):
-                            observations.append(f"Not enough data to assess {var1.replace('_',' ')} vs {var2.replace('_',' ')}.")
-                            continue
-                        r = corr.loc[var1, var2]
-                        abs_r = abs(r)
-                        strength = "weak" if abs_r < 0.3 else "moderate" if abs_r < 0.5 else "strong"
-                        direction = "positive" if r > 0 else "negative"
-                        clean1, clean2 = var1.replace("_", " "), var2.replace("_", " ")
-                        if strength == "weak":
-                            observations.append(f"In your last {len(user_df)} entries, {clean1} and {clean2} show a weak relationship.")
-                        else:
-                            observations.append(f"You show a {strength} pattern where higher {clean1} is associated with {direction} {clean2}.")
-                    st.subheader("Correlation insights")
-                    for obs in observations:
-                        st.write("- " + obs)
             except Exception as e:
                 st.error(f"Could not compute correlations: {e}")
 
-            # Rolling 7-day trends (if enough data)
+            # Rolling 7-day trends
             st.subheader("Trends (rolling 7-day mean)")
-            if len(user_df) < 7:
-                st.info("At least 7 entries required to show rolling trends.")
-            else:
+            if len(user_df) >= 7:
                 try:
                     rm_sleep = self.app.analysis_engine.rolling_mean(user_df, "sleep_hours", window=7)
                     rm_mood  = self.app.analysis_engine.rolling_mean(user_df, "mood", window=7)
@@ -220,14 +161,14 @@ class UIManager(BaseManager):
                     st.pyplot(fig2)
                 except Exception as e:
                     st.error(f"Failed to plot rolling trends: {e}")
+            else:
+                st.info("At least 7 entries required to show rolling trends.")
 
-            # Weekly averages (secondary y-axis)
+            # Weekly averages
             st.subheader("Weekly averages")
             try:
                 weekly = self.app.analysis_engine.weekly_summary(user_df)
-                if weekly is None or weekly.shape[0] == 0:
-                    st.info("Weekly averages not available (not enough data).")
-                else:
+                if weekly is not None and weekly.shape[0] > 0:
                     weekly = weekly.set_index("date")
                     fig3, ax1 = plt.subplots(figsize=(10, 5))
                     ax1.plot(weekly.index, weekly["sleep_hours"], label="Sleep (hrs)", marker="o")
@@ -242,10 +183,11 @@ class UIManager(BaseManager):
                     ax1.legend(lines + lines2, labels + labels2, loc="upper left")
                     fig3.tight_layout()
                     st.pyplot(fig3)
+                else:
+                    st.info("Weekly averages not available (not enough data).")
             except Exception as e:
                 st.error(f"Failed to compute weekly averages: {e}")
 
         else:
-            # still show placeholders so layout doesn't jump too much
             st.subheader("Entries (latest first)")
             st.info("No data to display yet. Use the entry form above to add your first entry.")
