@@ -1,6 +1,8 @@
+streamlit==1.28.0
+Pillow>=10.1.0
 pandas
 numpy
-Streamlit==1.23.1
-Pillow==9.5.0
 matplotlib
 seaborn
+markdown>=2.6.8
+werkzeug>=1.0.1
