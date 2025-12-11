@@ -1,10 +1,9 @@
-# managers/auth_manager.py
+﻿# managers/auth_manager.py
 import streamlit as st
 import pandas as pd
 import os
 from .base_manager import BaseManager
 
-# Default user data for demonstration purposes
 DEFAULT_USERS = pd.DataFrame([
     {"username": "user1", "password": "demo"},
     {"username": "demo", "password": "demo"}
@@ -13,23 +12,15 @@ DEFAULT_USERS = pd.DataFrame([
 
 class AuthManager(BaseManager):
     """
-    Manages user authentication and account creation.
-
-    This class provides functionality for user login, signup, and session management.
-    It uses a CSV file to store user credentials.
+    Plaintext username/password auth manager for demo/testing.
+    Creates data/users.csv automatically if missing.
     """
 
     def __init__(self, users_csv="data/users.csv"):
-        """
-        Initialize the AuthManager.
-
-        Args:
-            users_csv (str): Path to the CSV file storing user credentials.
-        """
         self.users_csv = users_csv
         self._ensure_users_csv()
 
-        # Initialize session state keys
+        # Session state keys
         if "username" not in st.session_state:
             st.session_state["username"] = None
         if "login_submitted" not in st.session_state:
@@ -38,9 +29,6 @@ class AuthManager(BaseManager):
             st.session_state["signup_submitted"] = False
 
     def _ensure_users_csv(self):
-        """
-        Ensure the users CSV file exists. If not, create it with default users.
-        """
         if not os.path.exists(self.users_csv):
             parent = os.path.dirname(self.users_csv)
             if parent and not os.path.exists(parent):
@@ -48,12 +36,6 @@ class AuthManager(BaseManager):
             DEFAULT_USERS.to_csv(self.users_csv, index=False)
 
     def load_users(self):
-        """
-        Load user credentials from the CSV file.
-
-        Returns:
-            pd.DataFrame: DataFrame containing user credentials.
-        """
         try:
             return pd.read_csv(self.users_csv, dtype=str).fillna("")
         except pd.errors.EmptyDataError:
@@ -61,12 +43,6 @@ class AuthManager(BaseManager):
             return DEFAULT_USERS.copy()
 
     def authenticate_user(self):
-        """
-        Authenticate the user by displaying login or signup options.
-
-        Returns:
-            str: The username of the authenticated user, or None if not authenticated.
-        """
         users = self.load_users()
 
         # --- Already logged in ---
@@ -74,12 +50,12 @@ class AuthManager(BaseManager):
             st.write(f"Logged in as **{st.session_state['username']}**")
             if st.button("Logout"):
                 st.session_state["username"] = None
-                st.experimental_rerun()  # Refresh UI after logout
+                st.experimental_rerun()  # refresh UI after logout
             return st.session_state["username"]
 
         # --- Not logged in, show login/signup ---
         st.title("🌿 Lifestyle & Wellness Tracker 🌿")
-        st.write("\n\n\n")  # Spacing
+        st.write("\n\n\n")  # spacing
 
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
@@ -92,12 +68,6 @@ class AuthManager(BaseManager):
         return st.session_state["username"]
 
     def _login(self, users):
-        """
-        Handle the login process.
-
-        Args:
-            users (pd.DataFrame): DataFrame containing user credentials.
-        """
         st.subheader("Login")
         with st.form("login_form", clear_on_submit=False):
             username = st.text_input("Username")
@@ -114,19 +84,13 @@ class AuthManager(BaseManager):
                     st.session_state["username"] = str(username).strip()
                     st.success(f"Logged in as {st.session_state['username']}")
                     st.session_state["login_submitted"] = False
-                    st.experimental_rerun()  # Refresh UI to show dashboard
+                    st.experimental_rerun()  # refresh UI to show dashboard
                     return
                 else:
                     st.error("Invalid username or password.")
                     st.session_state["login_submitted"] = False
 
     def _signup(self, users):
-        """
-        Handle the signup process.
-
-        Args:
-            users (pd.DataFrame): DataFrame containing user credentials.
-        """
         st.subheader("Sign Up")
         with st.form("signup_form", clear_on_submit=False):
             new_user = st.text_input("Choose a username")
@@ -154,5 +118,5 @@ class AuthManager(BaseManager):
                     st.success(f"Account created. Logged in as {nu}")
                     st.session_state["username"] = nu
                     st.session_state["signup_submitted"] = False
-                    st.experimental_rerun()  # Refresh UI to show dashboard
+                    st.experimental_rerun()  # refresh UI to show dashboard
                     return

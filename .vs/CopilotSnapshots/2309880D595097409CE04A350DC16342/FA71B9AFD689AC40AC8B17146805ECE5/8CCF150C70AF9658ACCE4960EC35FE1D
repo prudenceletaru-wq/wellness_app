@@ -1,4 +1,4 @@
-# managers/sample_data_generator.py
+﻿# managers/sample_data_generator.py
 import pandas as pd
 import numpy as np
 from datetime import date, timedelta

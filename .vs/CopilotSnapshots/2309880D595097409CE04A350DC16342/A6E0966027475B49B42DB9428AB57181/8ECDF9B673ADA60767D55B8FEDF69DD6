@@ -1,31 +1,14 @@
-# managers/theme_manager.py
+﻿# managers/theme_manager.py
 from .base_manager import BaseManager
 import streamlit as st
 
 class ThemeManager(BaseManager):
-    """
-    Manages the application theme by providing options for theme selection
-    and applying the selected theme to the Streamlit app.
-    """
-
     THEMES = ["Light", "Dark", "Mint", "Ocean"]
 
     def select_theme(self):
-        """
-        Display a sidebar dropdown for theme selection.
-
-        Returns:
-            str: The name of the selected theme.
-        """
         return st.sidebar.selectbox("Theme", self.THEMES, index=0)
 
     def apply_theme(self, theme_name: str):
-        """
-        Apply the selected theme by injecting custom CSS into the Streamlit app.
-
-        Args:
-            theme_name (str): The name of the theme to apply.
-        """
         css = ""
         if theme_name == "Light":
             css = """

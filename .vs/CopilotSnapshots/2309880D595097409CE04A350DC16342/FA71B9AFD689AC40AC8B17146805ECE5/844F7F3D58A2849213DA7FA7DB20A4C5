@@ -1,0 +1,13 @@
+﻿class BaseManager:
+    """
+    Base class for all managers in the Wellness App.
+    Provides shared structure and reusable helper methods.
+    """
+
+    def __init__(self):
+        # All managers can optionally use shared initialisation later
+        pass
+
+    def log(self, message: str):
+        """Simple shared logger for debugging or extension."""
+        print(f"[{self.__class__.__name__}] {message}")

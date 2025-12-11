@@ -1,4 +1,4 @@
-class BaseManager:
+﻿class BaseManager:
     """
     Base class for all managers in the Wellness Tracker application.
 

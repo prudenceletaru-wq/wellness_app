@@ -1,4 +1,4 @@
-# managers/sample_data_generator.py
+﻿# managers/sample_data_generator.py
 import pandas as pd
 import numpy as np
 from datetime import date, timedelta
@@ -6,37 +6,12 @@ import os
 from .base_manager import BaseManager
 
 class SampleDataGenerator(BaseManager):
-    """
-    Generates sample wellness data for users.
-
-    This class creates synthetic data for testing and demonstration purposes.
-    It generates data for metrics such as sleep hours, mood, stress, and activity minutes.
-    """
-
     def __init__(self, users_csv="data/users.csv", output_csv="data/saved_data.csv", days=30):
-        """
-        Initialize the SampleDataGenerator.
-
-        Args:
-            users_csv (str): Path to the CSV file containing user information.
-            output_csv (str): Path to the output CSV file for generated data.
-            days (int): Number of days for which to generate data.
-        """
         self.users_csv = users_csv
         self.output_csv = output_csv
         self.days = days
 
     def generate_for_user(self, user_id: str, days: int = None) -> pd.DataFrame:
-        """
-        Generate sample data for a specific user.
-
-        Args:
-            user_id (str): The ID of the user for whom to generate data.
-            days (int, optional): Number of days for which to generate data. Defaults to the instance's `days` attribute.
-
-        Returns:
-            pd.DataFrame: DataFrame containing the generated data for the user.
-        """
         if days is None:
             days = self.days
         rows = []
@@ -59,12 +34,6 @@ class SampleDataGenerator(BaseManager):
         return pd.DataFrame(rows)
 
     def generate_all(self, days: int = None):
-        """
-        Generate sample data for all users listed in the users CSV file.
-
-        Args:
-            days (int, optional): Number of days for which to generate data. Defaults to the instance's `days` attribute.
-        """
         if days is None:
             days = self.days
         if not os.path.exists(self.users_csv):

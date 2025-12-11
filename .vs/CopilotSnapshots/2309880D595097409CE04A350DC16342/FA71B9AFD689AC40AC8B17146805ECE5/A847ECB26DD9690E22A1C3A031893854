@@ -1,4 +1,4 @@
-# app.py
+﻿# app.py
 import streamlit as st
 from managers.data_manager import DataManager
 from managers.auth_manager import AuthManager
@@ -9,18 +9,12 @@ from managers.ui_manager import UIManager
 from managers.sample_data_generator import SampleDataGenerator
 import os
 
-# Ensure the data folder exists
+# Ensure data folder exists
 if not os.path.exists("data"):
     os.makedirs("data")
 
 def main():
-    """
-    Main entry point for the Wellness Tracker application.
-
-    This function initializes all the managers, sets up the application theme,
-    and handles user authentication and dashboard rendering.
-    """
-    # Instantiate managers
+    # instantiate managers
     data_manager = DataManager(data_csv="data/saved_data.csv")
     auth_manager = AuthManager(users_csv="data/users.csv")
     theme_manager = ThemeManager()
@@ -28,7 +22,7 @@ def main():
     recs_engine = RecommendationsEngine()
     sample_gen = SampleDataGenerator(users_csv="data/users.csv", output_csv="data/saved_data.csv")
 
-    # Lightweight app object passed to UIManager
+    # lightweight app object passed to UIManager
     class App:
         pass
 
@@ -40,22 +34,16 @@ def main():
     app.recs_engine = recs_engine
     app.sample_gen = sample_gen
 
-    # Initialize the UI manager
     ui = UIManager(app)
 
-    # Set up the Streamlit page configuration
     st.set_page_config(layout="wide", page_title="Wellness Tracker")
-
-    # Apply the selected theme
     theme = theme_manager.select_theme()
     theme_manager.apply_theme(theme)
 
-    # Authenticate the user
     username = auth_manager.authenticate_user()
     if not username:
         return
 
-    # Render the dashboard for the authenticated user
     ui.render_dashboard(username)
 
 

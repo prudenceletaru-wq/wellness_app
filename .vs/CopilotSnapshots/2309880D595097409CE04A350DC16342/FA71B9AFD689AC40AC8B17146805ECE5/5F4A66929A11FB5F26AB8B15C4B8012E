@@ -1,4 +1,4 @@
-# app.py
+﻿# app.py
 import streamlit as st
 from managers.data_manager import DataManager
 from managers.auth_manager import AuthManager

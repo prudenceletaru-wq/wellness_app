@@ -1,34 +1,17 @@
-# managers/analysis_engine.py
+﻿# managers/analysis_engine.py
 import pandas as pd
 from .base_manager import BaseManager
 
-# Define the numeric columns used for analysis
+
 NUMERIC_COLS = ["sleep_hours", "mood", "stress", "activity_min"]
 
 class AnalysisEngine(BaseManager):
-    """
-    Provides data analysis capabilities for the Wellness Tracker application.
-
-    This class includes methods for preprocessing data, calculating summary statistics,
-    computing rolling means, generating correlation matrices, and creating weekly summaries.
-    """
-
     def preprocess(self, df: pd.DataFrame, user_id: str = None) -> pd.DataFrame:
-        """
-        Preprocess the input DataFrame by normalizing dates and converting columns to numeric types.
-
-        Args:
-            df (pd.DataFrame): The input DataFrame to preprocess.
-            user_id (str, optional): Filter the data for a specific user ID.
-
-        Returns:
-            pd.DataFrame: The preprocessed DataFrame.
-        """
         df = df.copy()
         if "date" in df.columns:
             df["date"] = pd.to_datetime(df["date"], errors="coerce")
             df = df.dropna(subset=["date"])
-            # Normalize to date only (midnight)
+            # normalize to date only (midnight)
             df["date"] = pd.to_datetime(df["date"].dt.date)
         else:
             df["date"] = pd.NaT
@@ -45,32 +28,12 @@ class AnalysisEngine(BaseManager):
         return df.sort_values("date").reset_index(drop=True)
 
     def summary_stats(self, df: pd.DataFrame) -> pd.DataFrame:
-        """
-        Calculate summary statistics for the numeric columns in the DataFrame.
-
-        Args:
-            df (pd.DataFrame): The input DataFrame.
-
-        Returns:
-            pd.DataFrame: A DataFrame containing summary statistics.
-        """
         df = self.preprocess(df)
         if df.empty:
             return pd.DataFrame(columns=["count", "mean", "std", "min", "25%", "50%", "75%", "max"], index=NUMERIC_COLS)
         return df[NUMERIC_COLS].describe().T
 
     def rolling_mean(self, df: pd.DataFrame, col: str, window: int = 7) -> pd.Series:
-        """
-        Calculate the rolling mean for a specific column over a given window.
-
-        Args:
-            df (pd.DataFrame): The input DataFrame.
-            col (str): The column for which to calculate the rolling mean.
-            window (int): The size of the rolling window.
-
-        Returns:
-            pd.Series: A Series containing the rolling mean values.
-        """
         df = self.preprocess(df)
         if df.empty or col not in df.columns:
             return pd.Series(dtype=float)
@@ -78,30 +41,12 @@ class AnalysisEngine(BaseManager):
         return s
 
     def correlations(self, df: pd.DataFrame) -> pd.DataFrame:
-        """
-        Compute the correlation matrix for the numeric columns in the DataFrame.
-
-        Args:
-            df (pd.DataFrame): The input DataFrame.
-
-        Returns:
-            pd.DataFrame: A DataFrame containing the correlation matrix.
-        """
         df = self.preprocess(df)
         if df.empty:
             return pd.DataFrame(columns=NUMERIC_COLS, index=NUMERIC_COLS)
         return df[NUMERIC_COLS].corr()
 
     def weekly_summary(self, df: pd.DataFrame) -> pd.DataFrame:
-        """
-        Generate a weekly summary of the numeric columns in the DataFrame.
-
-        Args:
-            df (pd.DataFrame): The input DataFrame.
-
-        Returns:
-            pd.DataFrame: A DataFrame containing weekly averages for the numeric columns.
-        """
         df = self.preprocess(df)
         if df.empty:
             return pd.DataFrame(columns=["date"] + NUMERIC_COLS)

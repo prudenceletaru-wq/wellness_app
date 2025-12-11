@@ -1,47 +1,18 @@
-# managers/recommendations_engine.py
+﻿# managers/recommendations_engine.py
 from .base_manager import BaseManager
 
 class RecommendationsEngine(BaseManager):
-    """
-    Generates personalized wellness recommendations based on user data.
-
-    This class analyzes user metrics such as sleep, activity, mood, and stress
-    to provide actionable tips for improving overall wellness.
-    """
-
     def __init__(self):
-        """
-        Initialize the RecommendationsEngine with predefined color codes for recommendation levels.
-        """
         self.colors = {"healthy": "green", "moderate": "orange", "high": "red"}
 
     def _span(self, text: str, level: str) -> str:
-        """
-        Wrap the given text in an HTML span tag with a color corresponding to the recommendation level.
-
-        Args:
-            text (str): The text to be styled.
-            level (str): The recommendation level (e.g., "healthy", "moderate", "high").
-
-        Returns:
-            str: The HTML string with the styled text.
-        """
         color = self.colors.get(level, "black")
         return f"<span style='color:{color}'>{text}</span>"
 
     def generate(self, entry: dict) -> list:
-        """
-        Generate wellness recommendations based on the provided user data.
-
-        Args:
-            entry (dict): A dictionary containing user metrics such as sleep hours, activity minutes, mood, and stress levels.
-
-        Returns:
-            list: A list of HTML-formatted strings containing personalized recommendations.
-        """
         tips = []
 
-        # Sleep recommendations
+        # Sleep
         try:
             s = float(entry.get("sleep_hours", None))
             if 7 <= s <= 9:
@@ -53,7 +24,7 @@ class RecommendationsEngine(BaseManager):
         except Exception:
             pass
 
-        # Activity recommendations
+        # Activity
         try:
             a = float(entry.get("activity_min", None))
             if a >= 30:
@@ -65,7 +36,7 @@ class RecommendationsEngine(BaseManager):
         except Exception:
             pass
 
-        # Mood recommendations
+        # Mood
         try:
             m = float(entry.get("mood", None))
             if 7 <= m <= 10:
@@ -77,7 +48,7 @@ class RecommendationsEngine(BaseManager):
         except Exception:
             pass
 
-        # Stress recommendations
+        # Stress
         try:
             stv = float(entry.get("stress", None))
             if 1 <= stv <= 3:
@@ -89,7 +60,6 @@ class RecommendationsEngine(BaseManager):
         except Exception:
             pass
 
-        # Default message if no metrics are provided
         if not tips:
             tips.append(self._span("✅ All metrics look within healthy ranges — keep it up!", "healthy"))
 

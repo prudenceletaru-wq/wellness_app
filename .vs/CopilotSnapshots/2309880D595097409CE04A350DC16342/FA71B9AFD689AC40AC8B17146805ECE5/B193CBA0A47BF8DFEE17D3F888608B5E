@@ -1,10 +1,9 @@
-# managers/data_manager.py
+﻿# managers/data_manager.py
 import pandas as pd
 import os
 from datetime import date
 from .base_manager import BaseManager
 
-# Define the columns for the data CSV file
 COLUMNS = [
     "date",
     "user_id",
@@ -17,27 +16,11 @@ COLUMNS = [
 
 
 class DataManager(BaseManager):
-    """
-    Manages the storage and retrieval of user wellness data.
-
-    This class handles operations such as loading entries from a CSV file,
-    ensuring the file structure, and saving new or updated entries.
-    """
-
     def __init__(self, data_csv="data/saved_data.csv"):
-        """
-        Initialize the DataManager.
-
-        Args:
-            data_csv (str): Path to the CSV file storing user wellness data.
-        """
         self.data_csv = data_csv
         self._ensure_csv()
 
     def _ensure_csv(self):
-        """
-        Ensure the data CSV file exists. If not, create it with the required columns.
-        """
         parent = os.path.dirname(self.data_csv)
         if parent and not os.path.exists(parent):
             os.makedirs(parent)
@@ -45,12 +28,6 @@ class DataManager(BaseManager):
             pd.DataFrame(columns=COLUMNS).to_csv(self.data_csv, index=False)
 
     def load_entries(self) -> pd.DataFrame:
-        """
-        Load all entries from the data CSV file.
-
-        Returns:
-            pd.DataFrame: DataFrame containing all user wellness data.
-        """
         try:
             df = pd.read_csv(self.data_csv, dtype=str)
         except pd.errors.EmptyDataError:
@@ -63,34 +40,29 @@ class DataManager(BaseManager):
 
     def save_entry(self, entry: dict) -> pd.DataFrame:
         """
-        Save or overwrite today's entry for the given user ID.
-
-        Args:
-            entry (dict): A dictionary containing the user's wellness data.
-
-        Returns:
-            pd.DataFrame: Updated DataFrame containing all user wellness data.
+        Save or overwrite today's entry for the given user_id.
+        Date is forced to today's date (ISO).
         """
         df = self.load_entries()
 
         today_str = date.today().isoformat()
-        entry_date = today_str  # Force today's date
+        entry_date = today_str  # force today's date
         entry_copy = entry.copy()
         entry_copy["date"] = entry_date
 
-        # Check if an entry for the user and date already exists
+        # If existing row for user & date -> overwrite that row only
         if not df.empty:
             mask = (df["user_id"].astype(str) == str(entry_copy["user_id"])) & (df["date"].astype(str) == entry_date)
         else:
             mask = pd.Series([False] * 0)
 
         if mask.any():
-            # Overwrite specific columns for the existing entry
+            # overwrite specific columns
             idx = df.index[mask][0]
             for col in ["sleep_hours", "mood", "stress", "activity_min", "notes"]:
                 df.at[idx, col] = entry_copy.get(col)
         else:
-            # Append a new entry
+            # append new entry
             df = pd.concat([df, pd.DataFrame([entry_copy])], ignore_index=True)
 
         df.to_csv(self.data_csv, index=False)
