@@ -1,9 +1,11 @@
 # managers/analysis_engine.py
 import pandas as pd
+from .base_manager import BaseManager
+
 
 NUMERIC_COLS = ["sleep_hours", "mood", "stress", "activity_min"]
 
-class AnalysisEngine:
+class AnalysisEngine(BaseManager):
     def preprocess(self, df: pd.DataFrame, user_id: str = None) -> pd.DataFrame:
         df = df.copy()
         if "date" in df.columns:

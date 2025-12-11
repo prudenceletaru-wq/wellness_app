@@ -2,6 +2,7 @@
 import streamlit as st
 import pandas as pd
 import os
+from .base_manager import BaseManager
 
 DEFAULT_USERS = pd.DataFrame([
     {"username": "user1", "password": "demo"},
@@ -9,7 +10,7 @@ DEFAULT_USERS = pd.DataFrame([
 ])
 
 
-class AuthManager:
+class AuthManager(BaseManager):
     """
     Plaintext username/password auth manager for demo/testing.
     Creates data/users.csv automatically if missing.

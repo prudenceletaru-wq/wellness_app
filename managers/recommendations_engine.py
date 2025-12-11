@@ -1,5 +1,7 @@
 # managers/recommendations_engine.py
-class RecommendationsEngine:
+from .base_manager import BaseManager
+
+class RecommendationsEngine(BaseManager):
     def __init__(self):
         self.colors = {"healthy": "green", "moderate": "orange", "high": "red"}
 

@@ -4,8 +4,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from datetime import date
+from .base_manager import BaseManager
 
-class UIManager:
+class UIManager(BaseManager):
     """
     Responsible for Streamlit UI rendering: entry form, dashboard, plots, and
     simple overwrite confirmation for same-day entries.

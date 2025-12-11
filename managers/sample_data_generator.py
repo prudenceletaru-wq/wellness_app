@@ -3,8 +3,9 @@ import pandas as pd
 import numpy as np
 from datetime import date, timedelta
 import os
+from .base_manager import BaseManager
 
-class SampleDataGenerator:
+class SampleDataGenerator(BaseManager):
     def __init__(self, users_csv="data/users.csv", output_csv="data/saved_data.csv", days=30):
         self.users_csv = users_csv
         self.output_csv = output_csv

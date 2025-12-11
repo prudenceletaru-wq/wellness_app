@@ -2,6 +2,7 @@
 import pandas as pd
 import os
 from datetime import date
+from .base_manager import BaseManager
 
 COLUMNS = [
     "date",
@@ -14,7 +15,7 @@ COLUMNS = [
 ]
 
 
-class DataManager:
+class DataManager(BaseManager):
     def __init__(self, data_csv="data/saved_data.csv"):
         self.data_csv = data_csv
         self._ensure_csv()

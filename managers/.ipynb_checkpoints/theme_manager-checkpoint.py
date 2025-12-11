@@ -1,7 +1,8 @@
 # managers/theme_manager.py
+from .base_manager import BaseManager
 import streamlit as st
 
-class ThemeManager:
+class ThemeManager(BaseManager):
     THEMES = ["Light", "Dark", "Mint", "Ocean"]
 
     def select_theme(self):
